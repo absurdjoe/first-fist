@@ -286,3 +286,20 @@ input, button {
 .footer-links { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; }
 .footer-links span { cursor: pointer; }
 .footer-tagline { font-size: 10px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+
+
+/* Ensure the logo fits inside the header properly */
+.brand-icon-img {
+    width: 32px;        /* Sets the display width */
+    height: 32px;       /* Sets the display height */
+    object-fit: contain; /* Prevents the image from stretching/distorting */
+    display: block;
+}
+
+/* Ensure the container isn't forcing it to grow */
+.brand-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
