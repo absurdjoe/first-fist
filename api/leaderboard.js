@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb';
 import admin from 'firebase-admin';
 
+// Initialize Firebase Admin securely
 if (!admin.apps.length) {
     try {
         admin.initializeApp({
@@ -20,6 +21,7 @@ if (!uri) {
 let client;
 let clientPromise;
 
+// MongoDB Connection Caching for Serverless Environments
 if (process.env.NODE_ENV === 'development') {
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri);
@@ -31,6 +33,7 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect();
 }
 
+// Middleware to Verify Token
 async function verifyToken(req) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error('Missing token');
@@ -39,6 +42,7 @@ async function verifyToken(req) {
 }
 
 export default async function handler(req, res) {
+  // Reject unsupported methods immediately
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -51,7 +55,7 @@ export default async function handler(req, res) {
     // --- GET: FETCH GLOBAL RANKINGS ---
     if (req.method === 'GET') {
       const scores = await scoresCollection.find({})
-        .sort({ score: -1, force: -1 })
+        .sort({ score: -1, force: -1 }) // Sort by Score, tie-break with Force
         .limit(50)
         .toArray();
       return res.status(200).json(scores);
@@ -65,14 +69,17 @@ export default async function handler(req, res) {
       } catch (e) {
         return res.status(401).json({ error: 'Unauthorized or Token Expired' });
       }
-      const uid = decodedToken.uid;
+      const uid = decodedToken.uid; // 100% secure, verified by Google
 
       const { score, force, vector, city } = req.body;
+
+      // Strict payload validation
       if (typeof score !== 'number' || typeof force !== 'number') {
          return res.status(400).json({ error: 'Missing or invalid required fields' });
       }
 
-      // Never trust a client-supplied username — resolve it server-side from the uid
+      // Never trust a client-supplied username — resolve it server-side from
+      // the verified uid so nobody can post scores under someone else's name.
       const usersCollection = db.collection("users");
       const userRecord = await usersCollection.findOne({ uid });
       if (!userRecord || !userRecord.username) {
@@ -80,8 +87,10 @@ export default async function handler(req, res) {
       }
       const verifiedUsername = userRecord.username;
 
+      // 1. Fetch the user's existing record
       const existingEntry = await scoresCollection.findOne({ username: verifiedUsername });
 
+      // 2. High-Score Protection: Do not overwrite a higher score
       if (existingEntry && existingEntry.score >= score) {
          return res.status(200).json({ 
              success: true, 
@@ -90,6 +99,7 @@ export default async function handler(req, res) {
          });
       }
 
+      // 3. Upsert the new High Score
       const newScoreData = {
          uid,
          username: verifiedUsername,

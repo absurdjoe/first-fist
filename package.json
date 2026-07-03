@@ -12,5 +12,8 @@
     "firebase": "^12.15.0",
     "firebase-admin": "^14.1.0",
     "mongodb": "^6.5.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
   }
 }

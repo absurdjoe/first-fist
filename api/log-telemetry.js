@@ -33,11 +33,15 @@ export default async function handler(req, res) {
     const db = dbClient.db("firstfist_db");
     const collection = db.collection("telemetry_logs");
 
-    const { handle, vector, force, score, stability } = req.body;
+    // FIXED: js/api.js's logTelemetry() sends `username`, not `handle`.
+    // This was previously reading req.body.handle (always undefined),
+    // so every telemetry row silently recorded 'Guest' regardless of
+    // who was actually signed in.
+    const { username, vector, force, score, stability } = req.body;
 
     // --- DATA SANITIZATION & TYPE CASTING ---
     // Ensure data types are correct so your MongoDB analytics remain clean
-    const cleanHandle = (handle && typeof handle === 'string') ? handle.trim() : 'Guest';
+    const cleanUsername = (username && typeof username === 'string') ? username.trim() : 'Guest';
     const cleanVector = (vector && typeof vector === 'string') ? vector : 'unknown';
     
     // Cast to Numbers to prevent string injection, fallback to 0 if NaN
@@ -47,12 +51,12 @@ export default async function handler(req, res) {
 
     // Insert the clean summary object
     await collection.insertOne({
-      handle: cleanHandle,
+      username: cleanUsername,
       vector: cleanVector,
       force: cleanForce,
       score: cleanScore,
       stability: cleanStability,
-      timestamp: new Date() // Used for your 90-day Auto-Delete (TTL) index!
+      timestamp: new Date() // Requires a TTL index to actually auto-delete — see setup-indexes.mjs
     });
 
     return res.status(201).json({ success: true });

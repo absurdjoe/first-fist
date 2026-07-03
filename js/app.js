@@ -13,6 +13,7 @@ const PUNCH_TYPES = [
 
 // --- APP INITIALIZATION ---
 function loadLocalProfile() {
+    // UPDATED: Syncing with the new username paradigm
     const savedUsername = localStorage.getItem('ff_username');
     window.isLoggedIn = !!savedUsername; 
     
@@ -39,6 +40,28 @@ function updateHomeDashboard() {
     }
     document.getElementById('home-total').textContent = localStorage.getItem('ff_total_punches') || '0';
     document.getElementById('home-pb').textContent = (localStorage.getItem('ff_personal_best') || '0') + '%';
+}
+
+// --- TAB ROUTING & GUEST LOCK ---
+function switchTab(screenId) {
+    if (!window.isLoggedIn && (screenId === 'screen-leaderboard' || screenId === 'screen-setup')) {
+        if (typeof window.showLoginModal === 'function') {
+            window.showLoginModal("Sign in to view global rankings and your fighter profile.");
+        }
+        return; 
+    }
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add('active');
+
+    const navId = screenId.replace('screen-', 'tab-nav-');
+    const navItem = document.getElementById(navId);
+    if (navItem) navItem.classList.add('active');
+
+    if (screenId === 'screen-home') updateHomeDashboard();
 }
 
 // --- SENSOR ARMING & CAPTURE ---
@@ -167,7 +190,7 @@ function savePunchToHistory(metrics, vectorName) {
     if (typeof renderProfileHistory === 'function') renderProfileHistory();
 }
 
-// Add this helper to app.js
+// Locks/unlocks the Rankings and Profile tabs based on login state
 function updateTabBarVisuals() {
     const tabs = ['tab-nav-leaderboard', 'tab-nav-setup'];
     tabs.forEach(tabId => {
@@ -181,8 +204,6 @@ function updateTabBarVisuals() {
         }
     });
 }
-
-// Call this inside loadLocalProfile() and in your Auth Listener
 
 // --- BOOT SEQUENCE ---
 document.addEventListener('DOMContentLoaded', () => { 

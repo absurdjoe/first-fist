@@ -1,3 +1,9 @@
+// NOTE: This file is NOT currently loaded by index.html. The "Combos" tab
+// still shows a static "Coming soon" card, and the screens/elements this
+// file expects (screen-combo-select, screen-combo-results, combo-setup-panel,
+// etc.) don't exist yet in the HTML. Kept here self-consistent and ready to
+// wire in once that UI is built, but intentionally left dormant for now.
+
 const comboState = { activeCombo: null, currentStepIndex: 0, timestamps: [], forces: [], peakAccels: [], promptTime: 0, isTracking: false, results: null };
 const COMBOS = [
     { id: '1-2', name: 'Classic 1-2 Combo', sequence: ['jab', 'cross'], desc: 'Lead jab directly connected to rear power cross payload.' }
