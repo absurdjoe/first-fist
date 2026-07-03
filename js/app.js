@@ -41,19 +41,6 @@ function updateHomeDashboard() {
     document.getElementById('home-pb').textContent = (localStorage.getItem('ff_personal_best') || '0') + '%';
 }
 
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-    
-    const target = document.getElementById(screenId);
-    if (target) target.classList.add('active');
-
-    const navId = screenId.replace('screen-', 'tab-nav-');
-    const navItem = document.getElementById(navId);
-    if (navItem) navItem.classList.add('active');
-
-    if (screenId === 'screen-home') updateHomeDashboard();
-}
-
 // --- SENSOR ARMING & CAPTURE ---
 async function enableSensors() {
     window.removeEventListener('devicemotion', handleMotion);
