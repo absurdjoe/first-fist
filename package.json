@@ -1,8 +1,12 @@
 {
   "name": "first-fist",
   "version": "1.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
-    "start": "node"
+    "dev": "vercel dev",
+    "start": "vercel dev"
   },
   "dependencies": {
     "firebase": "^12.15.0",

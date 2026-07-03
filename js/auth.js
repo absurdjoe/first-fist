@@ -45,7 +45,7 @@ window.promptSubmitScore = function() {
     }
 };
 
-// Helper kept in one place so both the listener and manual retries use it
+// Keeps home dashboard + tab-bar lock state in sync wherever login state changes
 function syncLoggedInUI() {
     if (typeof window.updateHomeDashboard === 'function') window.updateHomeDashboard();
     if (typeof window.updateTabBarVisuals === 'function') window.updateTabBarVisuals();
@@ -64,11 +64,9 @@ if (auth) {
                 });
 
                 if (!response.ok) {
-                    // Server rejected the token / errored — don't silently
-                    // pretend the user has no profile. Surface it instead.
                     console.error("Profile sync failed with status", response.status);
                     window.showLoginModal("Couldn't sync your profile. Please try signing in again.");
-                    await signOut(auth);
+                    await signOut(auth).catch(() => {});
                     return;
                 }
 
@@ -79,12 +77,9 @@ if (auth) {
                     window.isLoggedIn = true;
                     syncLoggedInUI();
                 } else {
-                    // Genuinely new account — needs a username
                     document.getElementById('username-modal').style.display = 'flex';
                 }
             } catch (err) {
-                // Network/CORS failure — don't leave the app stuck thinking
-                // it's logged out forever while Firebase thinks it's logged in.
                 console.error("Failed to fetch user profile:", err);
                 window.showLoginModal("Connection issue while signing in. Please try again.");
                 await signOut(auth).catch(() => {});
@@ -104,7 +99,7 @@ window.signInWithGoogle = async function() {
         await signInWithPopup(auth, provider);
         window.closeLoginModal();
         // Don't call updateHomeDashboard() here — ff_username isn't set yet.
-        // onAuthStateChanged will update the UI once the profile sync finishes.
+        // onAuthStateChanged handles the UI update once profile sync finishes.
     } catch (error) {
         console.error("Sign-In Error:", error);
     }

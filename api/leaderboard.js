@@ -11,7 +11,7 @@ if (!admin.apps.length) {
     }
 }
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI; 
 
 if (!uri) {
   throw new Error('Please add your Mongo URI to Vercel Environment Variables');
@@ -69,10 +69,10 @@ export default async function handler(req, res) {
 
       const { score, force, vector, city } = req.body;
       if (typeof score !== 'number' || typeof force !== 'number') {
-        return res.status(400).json({ error: 'Missing or invalid required fields' });
+         return res.status(400).json({ error: 'Missing or invalid required fields' });
       }
 
-      // Never trust a client-supplied username — look up the one tied to this uid
+      // Never trust a client-supplied username — resolve it server-side from the uid
       const usersCollection = db.collection("users");
       const userRecord = await usersCollection.findOne({ uid });
       if (!userRecord || !userRecord.username) {
@@ -83,27 +83,27 @@ export default async function handler(req, res) {
       const existingEntry = await scoresCollection.findOne({ username: verifiedUsername });
 
       if (existingEntry && existingEntry.score >= score) {
-        return res.status(200).json({
-          success: true,
-          message: 'Score received, but previous high score was retained.',
-          data: existingEntry
-        });
+         return res.status(200).json({ 
+             success: true, 
+             message: 'Score received, but previous high score was retained.',
+             data: existingEntry 
+         });
       }
 
       const newScoreData = {
-        uid,
-        username: verifiedUsername,
-        score,
-        force,
-        city: city || 'Unknown',
-        vector: vector || 'cross',
-        date: new Date()
+         uid,
+         username: verifiedUsername,
+         score,
+         force,
+         city: city || 'Unknown',
+         vector: vector || 'cross',
+         date: new Date()
       };
 
       await scoresCollection.updateOne(
-        { username: verifiedUsername },
-        { $set: newScoreData },
-        { upsert: true }
+        { username: verifiedUsername }, 
+        { $set: newScoreData }, 
+        { upsert: true } 
       );
 
       return res.status(201).json({ success: true, data: newScoreData });

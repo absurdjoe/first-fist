@@ -28,7 +28,7 @@ function loadLocalProfile() {
     }
     if (savedVector) { state.punchType = savedVector; }
 
-    updateTabBarVisuals(); // <-- was never called before
+    updateTabBarVisuals();
 }
 
 function updateHomeDashboard() {
@@ -40,15 +40,6 @@ function updateHomeDashboard() {
     document.getElementById('home-total').textContent = localStorage.getItem('ff_total_punches') || '0';
     document.getElementById('home-pb').textContent = (localStorage.getItem('ff_personal_best') || '0') + '%';
 }
-
-// --- TAB ROUTING & GUEST LOCK ---
-function switchTab(screenId) {
-    if (!window.isLoggedIn && (screenId === 'screen-leaderboard' || screenId === 'screen-setup')) {
-        if (typeof window.showLoginModal === 'function') {
-            window.showLoginModal("Sign in to view global rankings and your fighter profile.");
-        }
-        return; 
-    }
 
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));

@@ -3,6 +3,10 @@ const COMBOS = [
     { id: '1-2', name: 'Classic 1-2 Combo', sequence: ['jab', 'cross'], desc: 'Lead jab directly connected to rear power cross payload.' }
 ];
 
+// How long (ms) to keep sampling after a punch is first detected, to
+// find the true peak before locking in that strike's value.
+const PUNCH_WINDOW_MS = 250;
+
 let comboWindowRecording = false;
 let comboWindowStart = 0;
 let comboBuffer = [];
@@ -43,6 +47,51 @@ function triggerNextComboPrompt() {
     document.getElementById('combo-target-punch').textContent = PUNCH_TYPES.find(p => p.id === cur).name.toUpperCase();
     document.getElementById('combo-step-indicator').textContent = `STRIKE ${comboState.currentStepIndex + 1}`;
     comboState.promptTime = performance.now();
+}
+
+/**
+ * Extracts device-frame linear acceleration (gravity removed), mirroring
+ * the fallback approach in sensors.js so combo tracking behaves the same
+ * on devices without a native LinearAccelerationSensor.
+ * Returns {x, y, z} or null if the event has no usable data.
+ */
+function getLinearAccel(event) {
+    const gAcc = event.accelerationIncludingGravity;
+    if (!gAcc || gAcc.x === null) return null;
+
+    const rawAccel = event.acceleration;
+    if (rawAccel && rawAccel.x !== null) {
+        return { x: rawAccel.x, y: rawAccel.y, z: rawAccel.z };
+    }
+
+    const alpha = 0.85;
+    if (!state.hasGravityEstimate) {
+        state.gravity = { x: gAcc.x, y: gAcc.y, z: gAcc.z };
+        state.hasGravityEstimate = true;
+    } else {
+        state.gravity.x = alpha * state.gravity.x + (1 - alpha) * gAcc.x;
+        state.gravity.y = alpha * state.gravity.y + (1 - alpha) * gAcc.y;
+        state.gravity.z = alpha * state.gravity.z + (1 - alpha) * gAcc.z;
+    }
+
+    return {
+        x: gAcc.x - state.gravity.x,
+        y: gAcc.y - state.gravity.y,
+        z: gAcc.z - state.gravity.z
+    };
+}
+
+/**
+ * Strips baseline muscular/sensor noise from a raw magnitude reading,
+ * using the same zero-zone offset established during arming calibration
+ * (see executeArmingProtocol in app.js).
+ */
+function filterSignalNoise(rawMag) {
+    return Math.max(0, rawMag - (state.zeroZoneOffset || 3.2));
+}
+
+function triggerHapticFeedback() {
+    if (navigator.vibrate) navigator.vibrate(100);
 }
 
 function handleComboMotion(event) {
