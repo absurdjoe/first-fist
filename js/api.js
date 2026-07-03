@@ -1,17 +1,31 @@
 // --- NETWORK & API ENGINE ---
 
+// Utility to prevent XSS injections from maliciously crafted usernames
+function escapeHTML(str) {
+    if (typeof str !== 'string') return 'Anonymous';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
 async function fetchOnlineLeaderboard() {
     const listContainer = document.getElementById('leaderboard-list');
     if (!listContainer) return;
     
     try {
         const response = await fetch('/api/leaderboard'); 
-        if (!response.ok) throw new Error('Database downlink failure');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
         listContainer.innerHTML = ""; 
         
-        if (data.length === 0) { 
+        if (!Array.isArray(data) || data.length === 0) { 
             listContainer.innerHTML = `<div style="text-align:center; padding:20px; font-size:13px; color: var(--text-muted);">No scores logged yet.</div>`; 
             return; 
         }
@@ -22,18 +36,20 @@ async function fetchOnlineLeaderboard() {
             let rankColor = index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : 'var(--text-muted)';
             
             const displayScore = entry.score || Math.min(100, Math.max(1, Math.round(Math.pow((entry.force || 0)/3500.0, 0.75) * 100)));
+            const safeUsername = escapeHTML(entry.username);
 
             row.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <span class="mono-metrics" style="color: ${rankColor}; width: 20px;">#${index + 1}</span>
-                    <div style="font-weight: 700;">${entry.username || 'Anonymous'}</div>
+                    <div style="font-weight: 700;">${safeUsername}</div>
                 </div>
                 <div class="mono-metrics" style="font-weight: 800; color: ${rankColor}; font-size: 16px;">${displayScore}%</div>
             `;
             listContainer.appendChild(row);
         });
     } catch (err) {
-        listContainer.innerHTML = `<div style="text-align:center; color:var(--red); padding:20px;">⚠️ Sync Error: Check Vercel backend routing.</div>`;
+        console.error("Leaderboard Fetch Error:", err);
+        listContainer.innerHTML = `<div style="text-align:center; color:var(--red); padding:20px;">⚠️ Sync Error: Unable to reach Atlas Grid.</div>`;
     }
 }
 
@@ -44,12 +60,12 @@ async function transmitScoreToLeaderboard() {
     
     // SECURE FAILSAFE: Ensure the user is logged in AND has an active Firebase token
     if (!username || !window.isLoggedIn || !window.firebaseToken) {
-        if(msg) { msg.textContent = "Authentication required."; msg.style.color = "var(--red)"; }
+        if (msg) { msg.textContent = "Authentication required."; msg.style.color = "var(--red)"; }
         return; 
     }
     
-    if(msg) { msg.textContent = "Transmitting to Atlas Grid..."; msg.style.color = "var(--accent)"; }
-    if(btn) btn.style.display = 'none';
+    if (msg) { msg.textContent = "Transmitting to Atlas Grid..."; msg.style.color = "var(--accent)"; }
+    if (btn) btn.style.display = 'none';
 
     // Build the payload using the new username paradigm
     const payload = { 
@@ -75,11 +91,14 @@ async function transmitScoreToLeaderboard() {
             // Re-fetch the leaderboard to calculate our current rank
             const leaderboardResponse = await fetch('/api/leaderboard');
             const leaderboardData = await leaderboardResponse.json();
-            const myRank = leaderboardData.findIndex(entry => entry.username === username) + 1;
+            
+            // CRITICAL FIX: Handle the case where the user's score doesn't crack the Top 50
+            const userIndex = leaderboardData.findIndex(entry => entry.username === username);
+            const myRank = userIndex !== -1 ? userIndex + 1 : "50+";
             
             state.lastRank = myRank;
             
-            if(msg) { 
+            if (msg) { 
                 // Check if the backend retained an older, higher score
                 if (responseData.message && responseData.message.includes('retained')) {
                     msg.textContent = `Rank Retained: #${myRank}`; 
@@ -98,8 +117,8 @@ async function transmitScoreToLeaderboard() {
         }
     } catch (err) { 
         console.error("Transmission Error:", err);
-        if(msg) { msg.textContent = err.message || "Transmission failed."; msg.style.color = "var(--red)"; }
-        if(btn) btn.style.display = 'block';
+        if (msg) { msg.textContent = err.message || "Transmission failed."; msg.style.color = "var(--red)"; }
+        if (btn) btn.style.display = 'block';
     }
 }
 
@@ -119,3 +138,8 @@ async function logTelemetry(metrics) {
         body: JSON.stringify(payload)
     }).catch(err => console.error("Telemetry log dropped", err));
 }
+
+// Ensure global accessibility for inline HTML onclick handlers
+window.fetchOnlineLeaderboard = fetchOnlineLeaderboard;
+window.transmitScoreToLeaderboard = transmitScoreToLeaderboard;
+window.logTelemetry = logTelemetry;

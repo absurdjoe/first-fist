@@ -2,67 +2,66 @@ import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGODB_URI;
 
-// Failsafe: Ensure environment variables are loaded
 if (!uri) {
-  throw new Error('Please add your Mongo URI to Vercel Environment Variables');
+    console.error("CRITICAL: MONGODB_URI is missing from environment variables.");
 }
 
 let client;
 let clientPromise;
 
-// MongoDB Connection Caching for Serverless Environments
+// MongoDB Connection Caching for Serverless
 if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri);
-    global._mongoClientPromise = client.connect();
-  }
-  clientPromise = global._mongoClientPromise;
+    if (!global._mongoClientPromise) {
+        client = new MongoClient(uri);
+        global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
 } else {
-  client = new MongoClient(uri);
-  clientPromise = client.connect();
+    client = new MongoClient(uri);
+    clientPromise = client.connect();
 }
 
 export default async function handler(req, res) {
-  // Reject unsupported methods immediately
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+    // Reject unsupported methods immediately
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  try {
-    const dbClient = await clientPromise;
-    const db = dbClient.db("firstfist_db");
-    const collection = db.collection("telemetry_logs");
+    try {
+        const dbClient = await clientPromise;
+        const db = dbClient.db("firstfist_db");
+        const collection = db.collection("telemetry_logs");
 
-    // FIXED: js/api.js's logTelemetry() sends `username`, not `handle`.
-    // This was previously reading req.body.handle (always undefined),
-    // so every telemetry row silently recorded 'Guest' regardless of
-    // who was actually signed in.
-    const { username, vector, force, score, stability } = req.body;
+        const { username, vector, force, score, stability } = req.body;
 
-    // --- DATA SANITIZATION & TYPE CASTING ---
-    // Ensure data types are correct so your MongoDB analytics remain clean
-    const cleanUsername = (username && typeof username === 'string') ? username.trim() : 'Guest';
-    const cleanVector = (vector && typeof vector === 'string') ? vector : 'unknown';
-    
-    // Cast to Numbers to prevent string injection, fallback to 0 if NaN
-    const cleanForce = Number(force) || 0;
-    const cleanScore = Number(score) || 0;
-    const cleanStability = Number(stability) || 100; 
+        // --- DATA SANITIZATION & SHIELDING ---
+        // 1. Truncate Strings: Prevent malicious users from sending 10MB text blocks
+        let cleanUsername = (username && typeof username === 'string') ? username.trim() : 'Guest';
+        if (cleanUsername.length > 30) cleanUsername = cleanUsername.substring(0, 30);
 
-    // Insert the clean summary object
-    await collection.insertOne({
-      username: cleanUsername,
-      vector: cleanVector,
-      force: cleanForce,
-      score: cleanScore,
-      stability: cleanStability,
-      timestamp: new Date() // Requires a TTL index to actually auto-delete — see setup-indexes.mjs
-    });
+        let cleanVector = (vector && typeof vector === 'string') ? vector.trim() : 'unknown';
+        if (cleanVector.length > 20) cleanVector = cleanVector.substring(0, 20);
+        
+        // 2. Number Boundaries: Prevent integer overflow database crashes
+        const cleanForce = Math.min(Math.max(Number(force) || 0, 0), 10000); 
+        const cleanScore = Math.min(Math.max(Number(score) || 0, 0), 100);
+        const cleanStability = Math.min(Math.max(Number(stability) || 100, 0), 100); 
 
-    return res.status(201).json({ success: true });
-  } catch (e) {
-    // Crucial: Log the actual error to Vercel so you can debug if the database connection drops
-    console.error("Telemetry API Error:", e);
-    return res.status(500).json({ error: 'Telemetry logging failed' });
-  }
+        // Insert the clean summary object
+        await collection.insertOne({
+            username: cleanUsername,
+            vector: cleanVector,
+            force: cleanForce,
+            score: cleanScore,
+            stability: cleanStability,
+            timestamp: new Date() 
+        });
+
+        return res.status(201).json({ success: true });
+    } catch (e) {
+        // Crucial: Log the actual error to Vercel so you can debug
+        console.error("Telemetry API Error:", e);
+        // We return a 500, but the frontend ignores it so the user's UI doesn't crash
+        return res.status(500).json({ error: 'Telemetry logging failed' });
+    }
 }

@@ -1,13 +1,14 @@
 /**
  * First Fist — Biomechanical Scoring & Physics Engine
- * Upgraded with Performance Tier tagging.
+ * Upgraded with Performance Tier tagging and strict boundaries.
  */
 
-const METRICS_CONFIG = {
+// Freeze configuration to prevent accidental runtime mutations
+const METRICS_CONFIG = Object.freeze({
     // 3500 Newtons is roughly the impact force of an elite heavyweight professional boxer.
     MAX_HUMAN_FORCE_NEWTONS: 3500.0, 
     MAX_VELOCITY_MS: 12.0
-};
+});
 
 /**
  * Calculates power and assigns a tier.
@@ -16,18 +17,20 @@ const METRICS_CONFIG = {
  * @returns {object} metrics object including force, score, color, and tier.
  */
 function calculatePunchPower(peakAccel, effectiveMass) {
-    // Defensive check
-    if (!peakAccel || isNaN(peakAccel)) peakAccel = 0;
-    if (!effectiveMass || isNaN(effectiveMass)) effectiveMass = 10;
+    // Defensive check: cleanly handle missing or corrupted sensor data
+    const validAccel = (typeof peakAccel === 'number' && !isNaN(peakAccel)) ? Math.max(0, peakAccel) : 0;
+    const validMass = (typeof effectiveMass === 'number' && !isNaN(effectiveMass)) ? Math.max(1, effectiveMass) : 10;
 
     // 1. Calculate raw kinetic force (F = ma)
-    const calculatedForce = effectiveMass * peakAccel;
+    const calculatedForce = validMass * validAccel;
     
     // 2. Map force against the absolute human limit (0.0 to 1.0)
     const rawFraction = calculatedForce / METRICS_CONFIG.MAX_HUMAN_FORCE_NEWTONS;
     
     // 3. Apply a logarithmic curve for Elite Gating
-    const curvedFraction = Math.pow(rawFraction, 0.75); 
+    // Clamped between 0 and 1 to prevent NaN anomalies
+    const safeFraction = Math.max(0, Math.min(1, rawFraction));
+    const curvedFraction = Math.pow(safeFraction, 0.75); 
     
     // 4. Convert to 0-100% ceiling integer
     const finalPct = Math.max(1, Math.min(100, Math.round(curvedFraction * 100)));
@@ -36,7 +39,7 @@ function calculatePunchPower(peakAccel, effectiveMass) {
         force: calculatedForce,
         scorePct: finalPct,
         color: getPowerColorGradient(finalPct),
-        tier: getPerformanceTier(finalPct) // NEW FEATURE
+        tier: getPerformanceTier(finalPct)
     };
 }
 
@@ -54,9 +57,9 @@ function getPerformanceTier(pct) {
  * Determines the UI glow based on performance tier.
  */
 function getPowerColorGradient(pct) {
-    if (pct >= 90) return "#ffd700"; // Elite: Gold
-    if (pct >= 70) return "var(--red)";   // Pro: Crimson Red
-    return "var(--accent)";          // Novice/Advanced: Cyan Blue
+    if (pct >= 90) return "#ffd700";        // Elite: Gold
+    if (pct >= 70) return "var(--red)";     // Pro: Crimson Red
+    return "var(--accent)";                 // Novice/Advanced: Cyan Blue
 }
 
 /**
@@ -65,9 +68,20 @@ function getPowerColorGradient(pct) {
 function calculateStability(buffer) {
     if (!Array.isArray(buffer) || buffer.length === 0) return 100; 
 
+    // Calculate the mean (average) movement
     const mean = buffer.reduce((sum, val) => sum + val, 0) / buffer.length;
+    
+    // Calculate variance: how far do the points stray from the mean?
     const variance = buffer.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / buffer.length;
     
-    const score = Math.max(0, 100 - (variance * 50)); 
+    // Convert variance to a 0-100 score explicitly bounded at both ends.
+    const score = Math.max(0, Math.min(100, 100 - (variance * 50))); 
     return Math.round(score);
 }
+
+// --- EXPORT TO GLOBAL WINDOW OBJECT ---
+// Ensures perfect cross-file compatibility with app.js and sensors.js
+window.calculatePunchPower = calculatePunchPower;
+window.calculateStability = calculateStability;
+window.getPerformanceTier = getPerformanceTier;
+window.getPowerColorGradient = getPowerColorGradient;

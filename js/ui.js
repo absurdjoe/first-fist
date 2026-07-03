@@ -1,22 +1,39 @@
 // --- UI & DOM MANIPULATION ENGINE ---
 
+// Utility to prevent HTML injection when rendering local storage data
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
 // Basic Screen Routing
 function goTo(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(screenId);
-    if(target) target.classList.add('active');
+    if (target) target.classList.add('active');
 }
 
 // Renders the punch type selection grid in the Profile tab
 function renderPunchSelectionGrid() {
     const grid = document.getElementById('punch-grid');
-    if (!grid) return;
+    if (!grid || typeof PUNCH_TYPES === 'undefined' || typeof state === 'undefined') return;
+    
     grid.innerHTML = "";
 
     PUNCH_TYPES.forEach(punch => {
         const isSelected = state.punchType === punch.id ? 'selected' : '';
         const item = document.createElement('div');
         item.className = `vector-option ${isSelected}`;
+        
+        // Using innerHTML is safe here because PUNCH_TYPES is a hardcoded trusted constant
         item.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${punch.icon}</svg>
             <h4>${punch.name}</h4>
@@ -46,25 +63,36 @@ function updateLiveGauge(mag) {
 
 // Populates the Final Result screen after a punch
 function populateMetricsUI(metricsData, effectiveMass, punchName) {
+    const safeForce = Math.round(metricsData.force);
+    const safeMass = effectiveMass.toFixed(2);
+    const safeVelocity = typeof state !== 'undefined' ? state.maxVelocity.toFixed(2) : "0.00";
+    
     document.getElementById('main-pct').textContent = metricsData.scorePct + '%';
     document.getElementById('main-pct').style.color = metricsData.color;
-    document.getElementById('main-fill').style.stroke = metricsData.color;
-    document.getElementById('main-fill').style.strokeDashoffset = 565.4 * (1 - metricsData.scorePct/100);
     
-    document.getElementById('result-score').textContent = metricsData.scorePct;
-    document.getElementById('result-score').style.color = metricsData.color;
+    const fillEl = document.getElementById('main-fill');
+    if (fillEl) {
+        fillEl.style.stroke = metricsData.color;
+        fillEl.style.strokeDashoffset = 565.4 * (1 - metricsData.scorePct/100);
+    }
     
-    document.getElementById('bd-force').textContent = Math.round(metricsData.force) + ' N';
-    document.getElementById('bd-mass').textContent = effectiveMass.toFixed(2) + ' kg';
-    document.getElementById('bd-type').textContent = punchName;
-    document.getElementById('bd-velocity').textContent = state.maxVelocity.toFixed(2) + ' m/s';
+    const resultScoreEl = document.getElementById('result-score');
+    if (resultScoreEl) {
+        resultScoreEl.textContent = metricsData.scorePct;
+        resultScoreEl.style.color = metricsData.color;
+    }
+    
+    document.getElementById('bd-force').textContent = safeForce + ' N';
+    document.getElementById('bd-mass').textContent = safeMass + ' kg';
+    document.getElementById('bd-type').textContent = escapeHTML(punchName);
+    document.getElementById('bd-velocity').textContent = safeVelocity + ' m/s';
 
     // DYNAMIC GAMIFICATION LOGIC
     const btn = document.getElementById('btn-submit-score');
     const msg = document.getElementById('upload-status-msg');
     if (msg) msg.textContent = "";
 
-    const highestSubmitted = parseInt(localStorage.getItem('ff_submitted_best') || '0');
+    const highestSubmitted = parseInt(localStorage.getItem('ff_submitted_best') || '0', 10);
 
     if (btn) {
         if (metricsData.scorePct > highestSubmitted) {
@@ -91,8 +119,8 @@ function renderProfileHistory() {
     const totalEl = document.getElementById('stat-total-punches');
     const pbEl = document.getElementById('stat-personal-best');
     
-    if (totalEl) totalEl.textContent = totalPunches;
-    if (pbEl) pbEl.textContent = personalBest + '%';
+    if (totalEl) totalEl.textContent = escapeHTML(totalPunches);
+    if (pbEl) pbEl.textContent = escapeHTML(personalBest) + '%';
 
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
@@ -106,17 +134,23 @@ function renderProfileHistory() {
     }
 
     history.forEach((punch) => {
+        const safeVector = escapeHTML(punch.vector);
+        const safeDate = escapeHTML(punch.date);
+        const safeScore = escapeHTML(punch.score);
+        const safeForce = escapeHTML(punch.force);
+        const safeColor = escapeHTML(punch.color);
+
         const row = document.createElement('div');
         row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 12px; margin-bottom: 8px;`;
         
         row.innerHTML = `
             <div>
-                <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">${punch.vector}</div>
-                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">${punch.date}</div>
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">${safeVector}</div>
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">${safeDate}</div>
             </div>
             <div style="text-align: right;">
-                <div class="mono-metrics" style="font-weight: 800; color: ${punch.color}; font-size: 18px; line-height: 1;">${punch.score}%</div>
-                <div class="mono-metrics" style="font-size: 10px; color: var(--text-muted);">${punch.force} N</div>
+                <div class="mono-metrics" style="font-weight: 800; color: ${safeColor}; font-size: 18px; line-height: 1;">${safeScore}%</div>
+                <div class="mono-metrics" style="font-size: 10px; color: var(--text-muted);">${safeForce} N</div>
             </div>
         `;
         historyList.appendChild(row);
@@ -124,27 +158,23 @@ function renderProfileHistory() {
 }
 
 // Renders the shareable performance card
-async function generateScorecard() {
+function generateScorecard() {
     const canvas = document.getElementById('scorecard-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    const score = state.lastMetrics ? state.lastMetrics.scorePct : 0;
-    
-    // UPDATED: Syncing with window.isLoggedIn and ff_username
+    const score = (typeof state !== 'undefined' && state.lastMetrics) ? state.lastMetrics.scorePct : 0;
     const username = window.isLoggedIn ? (localStorage.getItem('ff_username') || 'FIGHTER') : 'GUEST FIGHTER';
 
+    // Background & Border
     ctx.fillStyle = '#06070a';
     ctx.fillRect(0, 0, 1080, 1920);
     ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 25;
     ctx.strokeRect(30, 30, 1020, 1860);
 
-    const logo = new Image();
-    logo.src = 'logo.png'; 
-    
-    logo.onload = () => {
-        ctx.drawImage(logo, 390, 100, 300, 300);
+    // Text & Data Rendering Function
+    const drawTextData = () => {
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 350px sans-serif';
         ctx.textAlign = 'center';
@@ -156,12 +186,11 @@ async function generateScorecard() {
 
         ctx.fillStyle = '#ffffff';
         ctx.font = '50px sans-serif';
-        // Displaying username here
         ctx.fillText(`FIGHTER: ${username.toUpperCase()}`, 540, 1150);
         
         ctx.fillStyle = '#ffd700'; 
         ctx.font = 'bold 60px sans-serif';
-        const rankText = (window.isLoggedIn && state.lastRank) ? `GLOBAL RANK: #${state.lastRank}` : 'GLOBAL RANK: UNRANKED';
+        const rankText = (window.isLoggedIn && typeof state !== 'undefined' && state.lastRank) ? `GLOBAL RANK: #${state.lastRank}` : 'GLOBAL RANK: UNRANKED';
         ctx.fillText(rankText, 540, 1300);
 
         ctx.fillStyle = '#535a70';
@@ -171,10 +200,37 @@ async function generateScorecard() {
         ctx.font = 'bold 50px sans-serif';
         ctx.fillText('FIRST-FIST.VERCEL.APP', 540, 1760);
 
-        const dataURL = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = 'first-fist-promo.png';
-        link.href = dataURL;
-        link.click();
+        // Trigger Download
+        try {
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'first-fist-promo.png';
+            link.href = dataURL;
+            link.click();
+        } catch (e) {
+            console.error("Scorecard export failed:", e);
+        }
     };
+
+    // Attempt to load the logo, fallback if missing
+    const logo = new Image();
+    logo.crossOrigin = "Anonymous"; // Prevents canvas tainting if logo is on a CDN
+    logo.onload = () => {
+        ctx.drawImage(logo, 390, 100, 300, 300);
+        drawTextData();
+    };
+    logo.onerror = () => {
+        console.warn("Could not load logo.png for scorecard. Generating without logo.");
+        drawTextData();
+    };
+    
+    logo.src = 'logo.png'; 
 }
+
+// --- EXPORT TO GLOBAL WINDOW OBJECT ---
+window.goTo = goTo;
+window.renderPunchSelectionGrid = renderPunchSelectionGrid;
+window.updateLiveGauge = updateLiveGauge;
+window.populateMetricsUI = populateMetricsUI;
+window.renderProfileHistory = renderProfileHistory;
+window.generateScorecard = generateScorecard;

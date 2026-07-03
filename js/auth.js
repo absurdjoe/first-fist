@@ -9,7 +9,7 @@ window.isLoggedIn = !!localStorage.getItem('ff_username');
 let auth, provider;
 
 try {
-    // YOUR FIREBASE CONFIG
+    // FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyBdr5kB5UCEFXT3beszNbaRek7WbJpWfSc",
         authDomain: "first-fist-aa3cb.firebaseapp.com",
@@ -42,8 +42,8 @@ window.promptSubmitScore = function() {
         window.showLoginModal("Sign in with Google to claim your rank on the Atlas Grid.");
         return;
     }
-    if (typeof transmitScoreToLeaderboard === 'function') {
-        transmitScoreToLeaderboard();
+    if (typeof window.transmitScoreToLeaderboard === 'function') {
+        window.transmitScoreToLeaderboard();
     }
 };
 
@@ -59,7 +59,7 @@ if (auth) {
         if (user) {
             // User is signed in! Get their secure token
             const token = await user.getIdToken();
-            window.firebaseToken = token; // Store in memory for API calls
+            window.firebaseToken = token; 
 
             // Fetch their username from MongoDB
             try {
@@ -68,11 +68,19 @@ if (auth) {
                 });
 
                 if (!response.ok) {
-                    // Server rejected the token / errored. Don't silently treat
-                    // this as "no profile yet" — that would show the username
-                    // picker to a returning user and mask a real failure.
-                    console.error("Profile sync failed with status", response.status);
-                    window.showLoginModal("Couldn't sync your profile. Please try signing in again.");
+                    // ENHANCED DEBUGGING: Attempt to read the exact backend error
+                    let errorMsg = "Unknown Server Error";
+                    try {
+                        const errData = await response.json();
+                        errorMsg = errData.error || JSON.stringify(errData);
+                    } catch (e) {
+                        errorMsg = await response.text();
+                    }
+                    
+                    console.error(`Backend Sync Failed [Status ${response.status}]:`, errorMsg);
+                    
+                    // Show a more descriptive error in the UI if possible
+                    window.showLoginModal(`Sync failed (${response.status}). Check console for details.`);
                     await signOut(auth).catch(() => {});
                     return;
                 }
@@ -89,12 +97,8 @@ if (auth) {
                     document.getElementById('username-modal').style.display = 'flex';
                 }
             } catch (err) {
-                // Network/CORS failure. Without this, Firebase thinks the user
-                // is signed in but window.isLoggedIn never flips to true and
-                // ff_username never gets set — the app gets stuck permanently
-                // showing "Guest Fighter" / locked tabs with no way out.
-                console.error("Failed to fetch user profile:", err);
-                window.showLoginModal("Connection issue while signing in. Please try again.");
+                console.error("Network/CORS failure fetching profile:", err);
+                window.showLoginModal("Connection issue while signing in. Please check your network and try again.");
                 await signOut(auth).catch(() => {});
             }
         } else {
@@ -112,9 +116,6 @@ window.signInWithGoogle = async function() {
     try {
         await signInWithPopup(auth, provider);
         window.closeLoginModal();
-        // NOTE: we intentionally do NOT call updateHomeDashboard() here.
-        // ff_username isn't set yet at this point — onAuthStateChanged
-        // handles the UI refresh once profile sync actually completes.
     } catch (error) {
         console.error("Sign-In Error:", error);
     }
@@ -156,10 +157,11 @@ window.submitNewUsername = async function() {
 
         // Auto-submit score if they just finished a punch
         if (typeof state !== 'undefined' && state.lastMetrics && state.lastMetrics.scorePct > 0) {
-            if (typeof transmitScoreToLeaderboard === 'function') transmitScoreToLeaderboard();
+            if (typeof window.transmitScoreToLeaderboard === 'function') window.transmitScoreToLeaderboard();
         }
 
     } catch (error) {
+        console.error("Username Claim Error:", error);
         if (errorDiv) errorDiv.textContent = "Network error. Try again.";
     }
 };
@@ -168,8 +170,8 @@ window.submitNewUsername = async function() {
 window.logoutProfile = async function() {
     if (confirm("Are you sure? This will log you out of your current profile.")) {
         try {
-            await signOut(auth); // The listener will handle the backend cleanup!
-
+            await signOut(auth);
+            
             // Clear all local telemetry data for privacy
             ['ff_username', 'ff_weight', 'ff_vector', 'ff_history', 'ff_total_punches', 'ff_personal_best', 'ff_submitted_best'].forEach(key => localStorage.removeItem(key));
 

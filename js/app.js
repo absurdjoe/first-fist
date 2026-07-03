@@ -1,9 +1,20 @@
 // --- CORE STATE & CONFIG ---
 const state = { 
-    bodyWeight: 70, punchType: 'cross', peak: 0, maxVelocity: 0, 
-    armed: false, capturing: false, gravity: { x: 0, y: 0, z: 0 }, hasGravityEstimate: false, 
-    punchCount: 0, bestPct: 0, isCalibrating: false, zeroZoneOffset: 3.2,
-    lastMetrics: null, lastRank: null
+    bodyWeight: 70, 
+    punchType: 'cross', 
+    peak: 0, 
+    maxVelocity: 0, 
+    armed: false, 
+    capturing: false, 
+    gravity: { x: 0, y: 0, z: 0 }, 
+    hasGravityEstimate: false, 
+    punchCount: 0, 
+    bestPct: 0, 
+    isCalibrating: false, 
+    zeroZoneOffset: 3.2,
+    lastMetrics: null, 
+    lastRank: null,
+    lastPunchConfidence: null // Added for sensor impact tracking
 };
 
 const PUNCH_TYPES = [
@@ -13,7 +24,7 @@ const PUNCH_TYPES = [
 
 // --- APP INITIALIZATION ---
 function loadLocalProfile() {
-    // UPDATED: Syncing with the new username paradigm
+    // Sync with the new username paradigm
     const savedUsername = localStorage.getItem('ff_username');
     window.isLoggedIn = !!savedUsername; 
     
@@ -27,17 +38,21 @@ function loadLocalProfile() {
         const weightInput = document.getElementById('input-weight');
         if (weightInput) weightInput.value = savedWeight;
     }
-    if (savedVector) { state.punchType = savedVector; }
+    
+    if (savedVector) { 
+        state.punchType = savedVector; 
+    }
 
     updateTabBarVisuals();
 }
 
 function updateHomeDashboard() {
-    // UPDATED: Targeting the new home-username ID and ff_username storage key
     const usernameDisplay = document.getElementById('home-username');
     if (usernameDisplay) {
-        usernameDisplay.textContent = window.isLoggedIn ? localStorage.getItem('ff_username').toUpperCase() : 'GUEST FIGHTER';
+        const username = localStorage.getItem('ff_username') || 'Guest Fighter';
+        usernameDisplay.textContent = window.isLoggedIn ? username.toUpperCase() : 'GUEST FIGHTER';
     }
+    
     document.getElementById('home-total').textContent = localStorage.getItem('ff_total_punches') || '0';
     document.getElementById('home-pb').textContent = (localStorage.getItem('ff_personal_best') || '0') + '%';
 }
@@ -64,6 +79,21 @@ function switchTab(screenId) {
     if (screenId === 'screen-home') updateHomeDashboard();
 }
 
+// Locks/unlocks the Rankings and Profile tabs based on login state
+function updateTabBarVisuals() {
+    const tabs = ['tab-nav-leaderboard', 'tab-nav-setup'];
+    tabs.forEach(tabId => {
+        const el = document.getElementById(tabId);
+        if (!el) return;
+        
+        if (!window.isLoggedIn) {
+            el.classList.add('locked');
+        } else {
+            el.classList.remove('locked');
+        }
+    });
+}
+
 // --- SENSOR ARMING & CAPTURE ---
 async function enableSensors() {
     window.removeEventListener('devicemotion', handleMotion);
@@ -76,7 +106,9 @@ async function enableSensors() {
             } else {
                 alert("Please grant motion sensor permissions to track punches.");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+        }
     } else {
         window.addEventListener('devicemotion', handleMotion, true);
         setupSensorSuccess();
@@ -89,8 +121,12 @@ function setupSensorSuccess() {
 }
 
 function executeArmingProtocol() {
-    state.peak = 0; state.maxVelocity = 0; state.capturing = false; state.armed = false;
-    state.isCalibrating = true; state.zeroZoneOffset = 3.2; 
+    state.peak = 0; 
+    state.maxVelocity = 0; 
+    state.capturing = false; 
+    state.armed = false;
+    state.isCalibrating = true; 
+    state.zeroZoneOffset = 3.2; 
     
     if (typeof stabilityBuffer !== 'undefined') stabilityBuffer = [];
     if (typeof resetSensorBuffers === 'function') resetSensorBuffers();
@@ -135,14 +171,14 @@ function finalizeCapture() {
     const metricsData = (typeof calculatePunchPower === 'function') ? calculatePunchPower(state.peak, effectiveMass) : { scorePct: 0, force: 0 };
     metricsData.stability = finalStability; 
     
-    if (typeof logTelemetry === 'function') logTelemetry(metricsData);
+    if (typeof logTelemetry === 'function') window.logTelemetry(metricsData);
     
     if (typeof populateMetricsUI === 'function') populateMetricsUI(metricsData, effectiveMass, config.name);
     state.lastMetrics = metricsData;
     
     if (typeof savePunchToHistory === 'function') savePunchToHistory(metricsData, config.name);
     
-    goTo('screen-result');
+    if (typeof goTo === 'function') goTo('screen-result');
 
     // Automatically prompt guests to sign in after viewing their score
     if (!window.isLoggedIn) {
@@ -151,15 +187,12 @@ function finalizeCapture() {
                 window.showLoginModal("Great strike! Sign in with Google to push your score to the Global Leaderboard.");
             }
         }, 1200);
-    } else {
-        // Automatically reveal the submit button if they are already logged in
-        const btn = document.getElementById('btn-submit-score');
-        if (btn) btn.style.display = 'inline-block';
     }
+    // Note: If logged in, populateMetricsUI() manages the submit button visibility dynamically.
 }
 
 function remeasure() { 
-    goTo('screen-measure'); 
+    if (typeof goTo === 'function') goTo('screen-measure'); 
     executeArmingProtocol(); 
 }
 
@@ -190,30 +223,35 @@ function savePunchToHistory(metrics, vectorName) {
     if (typeof renderProfileHistory === 'function') renderProfileHistory();
 }
 
-// Locks/unlocks the Rankings and Profile tabs based on login state
-function updateTabBarVisuals() {
-    const tabs = ['tab-nav-leaderboard', 'tab-nav-setup'];
-    tabs.forEach(tabId => {
-        const el = document.getElementById(tabId);
-        if (!el) return;
-        
-        if (!window.isLoggedIn) {
-            el.classList.add('locked');
-        } else {
-            el.classList.remove('locked');
-        }
-    });
-}
+// --- EXPORT TO GLOBAL WINDOW OBJECT ---
+window.switchTab = switchTab;
+window.enableSensors = enableSensors;
+window.remeasure = remeasure;
+window.updateHomeDashboard = updateHomeDashboard;
+window.updateTabBarVisuals = updateTabBarVisuals;
 
 // --- BOOT SEQUENCE ---
 document.addEventListener('DOMContentLoaded', () => { 
     loadLocalProfile();
+    
     if (typeof renderPunchSelectionGrid === 'function') renderPunchSelectionGrid(); 
     
     // Safety check in case they reload on the leaderboard page
     if (document.getElementById('screen-leaderboard').classList.contains('active')) {
-        fetchOnlineLeaderboard(); 
+        if (typeof window.fetchOnlineLeaderboard === 'function') window.fetchOnlineLeaderboard(); 
     }
     
     if (typeof renderProfileHistory === 'function') renderProfileHistory();
+
+    // Event Listener for the weight input field
+    const weightInput = document.getElementById('input-weight');
+    if (weightInput) {
+        weightInput.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val) && val > 0) {
+                state.bodyWeight = val;
+                localStorage.setItem('ff_weight', val);
+            }
+        });
+    }
 });
