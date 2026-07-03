@@ -1,9 +1,12 @@
 // --- UI & DOM MANIPULATION ENGINE ---
 
 // Utility to prevent HTML injection when rendering local storage data
-function escapeHTML(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>'"]/g, 
+function escapeHTML(val) {
+    // If the value is missing entirely, return a safe fallback
+    if (val === null || val === undefined) return '';
+    
+    // Force numbers into strings safely before scanning
+    return String(val).replace(/[&<>'"]/g, 
         tag => ({
             '&': '&amp;',
             '<': '&lt;',

@@ -1,9 +1,12 @@
 // --- NETWORK & API ENGINE ---
 
 // Utility to prevent XSS injections from maliciously crafted usernames
-function escapeHTML(str) {
-    if (typeof str !== 'string') return 'Anonymous';
-    return str.replace(/[&<>'"]/g, 
+function escapeHTML(val) {
+    // If the value is missing entirely, return a safe fallback
+    if (val === null || val === undefined) return '';
+    
+    // Force numbers into strings safely before scanning
+    return String(val).replace(/[&<>'"]/g, 
         tag => ({
             '&': '&amp;',
             '<': '&lt;',
@@ -13,7 +16,6 @@ function escapeHTML(str) {
         }[tag] || tag)
     );
 }
-
 async function fetchOnlineLeaderboard() {
     const listContainer = document.getElementById('leaderboard-list');
     if (!listContainer) return;
