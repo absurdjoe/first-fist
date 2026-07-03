@@ -13,7 +13,6 @@ const PUNCH_TYPES = [
 
 // --- APP INITIALIZATION ---
 function loadLocalProfile() {
-    // UPDATED: Syncing with the new username paradigm
     const savedUsername = localStorage.getItem('ff_username');
     window.isLoggedIn = !!savedUsername; 
     
@@ -28,6 +27,8 @@ function loadLocalProfile() {
         if (weightInput) weightInput.value = savedWeight;
     }
     if (savedVector) { state.punchType = savedVector; }
+
+    updateTabBarVisuals(); // <-- was never called before
 }
 
 function updateHomeDashboard() {
@@ -84,13 +85,6 @@ async function enableSensors() {
 function setupSensorSuccess() {
     if (typeof goTo === 'function') goTo('screen-measure'); 
     executeArmingProtocol();
-}
-
-// Helper for generic UI transitions (assuming goTo exists in ui.js)
-function goTo(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(screenId);
-    if (target) target.classList.add('active');
 }
 
 function executeArmingProtocol() {

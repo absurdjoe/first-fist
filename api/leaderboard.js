@@ -1,6 +1,17 @@
 import { MongoClient } from 'mongodb';
+import admin from 'firebase-admin';
 
-const uri = process.env.MONGODB_URI; 
+if (!admin.apps.length) {
+    try {
+        admin.initializeApp({
+            credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
+        });
+    } catch (error) {
+        console.error('Firebase Admin Init Error:', error);
+    }
+}
+
+const uri = process.env.MONGODB_URI;
 
 if (!uri) {
   throw new Error('Please add your Mongo URI to Vercel Environment Variables');
@@ -9,7 +20,6 @@ if (!uri) {
 let client;
 let clientPromise;
 
-// MongoDB Connection Caching for Serverless Environments
 if (process.env.NODE_ENV === 'development') {
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri);
@@ -21,8 +31,14 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect();
 }
 
+async function verifyToken(req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error('Missing token');
+    const token = authHeader.split('Bearer ')[1];
+    return await admin.auth().verifyIdToken(token);
+}
+
 export default async function handler(req, res) {
-  // Reject unsupported methods immediately
   if (!['GET', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -30,54 +46,64 @@ export default async function handler(req, res) {
   try {
     const dbClient = await clientPromise;
     const db = dbClient.db("firstfist_db"); 
-    const collection = db.collection("scores");
+    const scoresCollection = db.collection("scores");
 
     // --- GET: FETCH GLOBAL RANKINGS ---
     if (req.method === 'GET') {
-      const scores = await collection.find({})
-        .sort({ score: -1, force: -1 }) // Sort by Score, tie-break with Force
+      const scores = await scoresCollection.find({})
+        .sort({ score: -1, force: -1 })
         .limit(50)
         .toArray();
       return res.status(200).json(scores);
     }
 
-    // --- POST: SUBMIT NEW SCORE ---
+    // --- POST: SUBMIT NEW SCORE (auth required) ---
     if (req.method === 'POST') {
-      const { handle, score, force, city, vector } = req.body;
-      
-      // Strict payload validation
-      if (!handle || typeof score !== 'number' || typeof force !== 'number') {
-         return res.status(400).json({ error: 'Missing or invalid required fields' });
+      let decodedToken;
+      try {
+        decodedToken = await verifyToken(req);
+      } catch (e) {
+        return res.status(401).json({ error: 'Unauthorized or Token Expired' });
+      }
+      const uid = decodedToken.uid;
+
+      const { score, force, vector, city } = req.body;
+      if (typeof score !== 'number' || typeof force !== 'number') {
+        return res.status(400).json({ error: 'Missing or invalid required fields' });
       }
 
-      const cleanHandle = handle.trim();
+      // Never trust a client-supplied username — look up the one tied to this uid
+      const usersCollection = db.collection("users");
+      const userRecord = await usersCollection.findOne({ uid });
+      if (!userRecord || !userRecord.username) {
+        return res.status(400).json({ error: 'No username on file. Please set a username first.' });
+      }
+      const verifiedUsername = userRecord.username;
 
-      // 1. Fetch the user's existing record
-      const existingEntry = await collection.findOne({ handle: cleanHandle });
+      const existingEntry = await scoresCollection.findOne({ username: verifiedUsername });
 
-      // 2. High-Score Protection: Do not overwrite a higher score
       if (existingEntry && existingEntry.score >= score) {
-         return res.status(200).json({ 
-             success: true, 
-             message: 'Score received, but previous high score was retained.',
-             data: existingEntry 
-         });
+        return res.status(200).json({
+          success: true,
+          message: 'Score received, but previous high score was retained.',
+          data: existingEntry
+        });
       }
 
-      // 3. Upsert the new High Score
       const newScoreData = {
-         handle: cleanHandle,
-         score,
-         force,
-         city: city || 'Unknown',
-         vector: vector || 'cross',
-         date: new Date()
+        uid,
+        username: verifiedUsername,
+        score,
+        force,
+        city: city || 'Unknown',
+        vector: vector || 'cross',
+        date: new Date()
       };
 
-      await collection.updateOne(
-        { handle: cleanHandle }, 
-        { $set: newScoreData }, 
-        { upsert: true } 
+      await scoresCollection.updateOne(
+        { username: verifiedUsername },
+        { $set: newScoreData },
+        { upsert: true }
       );
 
       return res.status(201).json({ success: true, data: newScoreData });
