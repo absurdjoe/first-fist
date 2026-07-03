@@ -48,39 +48,108 @@
     <div class="app-container">
 
         <!-- 1: HOME / MAIN SCREEN -->
-        <div id="screen-home" class="screen active">
-            <div style="margin-bottom: 32px;">
-                <h1 style="font-size: 28px; font-weight: 900; margin-bottom: 4px;">Training Core</h1>
-                <p style="color: var(--text-muted); font-size: 14px;">Welcome, <b style="color: #fff;" id="home-username">Guest Fighter</b>.</p>
-            </div>
+        <<div id="screen-home" class="screen active">
+    
+    <!-- 0. Site Logo and Branding -->
+    <div class="home-header">
+        <div class="brand-group">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <h1 class="brand-text">FIRST-FIST</h1>
+        </div>
+        <div class="user-greeting" id="home-username">GUEST FIGHTER</div>
+    </div>
 
-            <div class="card" style="border-left: 4px solid var(--accent);">
-                <h3 style="font-size: 14px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;">Inspiration: Vikram</h3>
-                <p style="font-size: 13px; line-height: 1.5; color: #ccc;">
-                    Forged in the spirit of the Vikram universe. Precision, speed, and raw kinetic output are the only metrics that matter. Sharpen your strikes.
-                </p>
-            </div>
+    <!-- 1. Hero Section -->
+    <div class="hero-section">
+        <h2>Measure Your Punch.<br><span class="accent-text">Improve Your Power.</span></h2>
+        <p>Track your punch force and train smarter with real-time insights using just your phone.</p>
+        <button class="btn primary" onclick="window.enableSensors()">Find Your Punch Force 🥊</button>
+        <button id="hero-login-btn" class="btn ghost hero-secondary" onclick="if(window.showLoginModal) window.showLoginModal('Sign in to compete globally.')">Sign In to Compete Globally</button>
+    </div>
 
-            <div class="card">
-                <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">Achieve Peak Telemetry</h3>
-                <div style="font-size: 13px; color: var(--text-muted);">
-                    <p style="margin-bottom: 8px;">• <b>Stability:</b> Keep the device tight in your palm.</p>
-                    <p style="margin-bottom: 8px;">• <b>Extension:</b> Snap the punch to full lockout.</p>
-                    <p>• <b>Calibration:</b> Always wait for the <i>System Armed</i> pulse.</p>
-                </div>
+    <!-- 6. Your Stats Overview -->
+    <div class="card metrics-card">
+        <h3 class="card-title">Your Performance</h3>
+        <div class="compact-grid" id="home-stats-grid">
+            <div class="stat-box">
+                <div class="label-caps">Total Strikes</div>
+                <div class="mono-metrics stat-val" id="home-total">0</div>
             </div>
-
-            <div class="compact-grid">
-                <div class="card" style="text-align: center; padding: 16px;">
-                    <div class="label-caps">Total Strikes</div>
-                    <div class="mono-metrics" id="home-total" style="font-size: 20px;">0</div>
-                </div>
-                <div class="card" style="text-align: center; padding: 16px;">
-                    <div class="label-caps">Best Score</div>
-                    <div class="mono-metrics" id="home-pb" style="font-size: 20px; color: var(--accent);">0%</div>
-                </div>
+            <div class="stat-box">
+                <div class="label-caps">Best Score</div>
+                <div class="mono-metrics stat-val" style="color: var(--accent);" id="home-pb">0%</div>
+            </div>
+            <div class="stat-box" style="grid-column: span 2;">
+                <div class="label-caps">Average Punch Force</div>
+                <div class="mono-metrics stat-val" id="home-avg">0 N</div>
             </div>
         </div>
+        <div id="home-empty-state" class="empty-state">Start punching to see your stats here.</div>
+    </div>
+
+    <!-- 7. Competitive Section (Locked for Guests) -->
+    <div id="home-competitive-card" class="card locked-card">
+        <h3 class="card-title">Global Rankings</h3>
+        <p>See how your punch compares with others around the world. Sign in to access leaderboards and compete globally.</p>
+        <button class="btn ghost" onclick="if(window.showLoginModal) window.showLoginModal('Sign in to view global rankings.')">Sign In to View Rankings</button>
+    </div>
+
+    <!-- 2. How to Use -->
+    <div class="card info-card">
+        <h3 class="card-title">How to Use the App</h3>
+        <ol class="step-list">
+            <li>Secure your phone firmly in your hand or strap it tightly to your arm using an armband.</li>
+            <li>Make sure the phone does not move independently while punching.</li>
+            <li>Get into a proper stance and throw a clean, controlled punch.</li>
+            <li>Instantly view your punch force score on the screen.</li>
+        </ol>
+    </div>
+
+    <!-- 3. Train for Best Results -->
+    <div class="card info-card">
+        <h3 class="card-title">Get the Best Out of Every Punch</h3>
+        <ul class="bullet-list">
+            <li>Use a tight grip or a secure armband to prevent phone movement.</li>
+            <li>Keep your punches clean and controlled for accurate readings.</li>
+            <li>Maintain proper form—balance, stance, and follow-through matter.</li>
+            <li>Avoid random swinging; consistent technique gives better tracking.</li>
+            <li>Start slow and increase power gradually to track real improvement.</li>
+        </ul>
+    </div>
+
+    <!-- 4. Safety Guidelines -->
+    <div class="card info-card safety-card">
+        <h3 class="card-title" style="color: var(--red);">Train Safe ⚠️</h3>
+        <ul class="bullet-list">
+            <li>Always ensure your phone is securely held or strapped before punching.</li>
+            <li>Do not punch hard surfaces while holding your phone.</li>
+            <li>Avoid overexertion—build intensity gradually.</li>
+            <li>Keep a safe distance from people and objects.</li>
+            <li>Stop immediately if you feel discomfort or strain.</li>
+            <li>Use protective gear (like hand wraps) if training intensely.</li>
+        </ul>
+    </div>
+
+    <!-- 5. How This Technology Works -->
+    <div class="card info-card">
+        <h3 class="card-title">How It Works</h3>
+        <p class="tech-text">This app uses your phone’s built-in accelerometer to measure motion and speed during your punch. When you punch, the sensor detects how fast and forcefully your hand moves. The app then converts this movement into a punch force score using smart calculations. The cleaner and more controlled your punch, the more accurate your result will be.</p>
+    </div>
+
+    <!-- 8. Future Training Module -->
+    <div class="card info-card upcoming-card">
+        <h3 class="card-title">Train Smarter <span class="badge">Coming Soon</span></h3>
+        <p>Structured training programs, guided drills, and performance insights designed to help you improve faster and punch stronger.</p>
+    </div>
+
+    <!-- 9. Footer -->
+    <div class="home-footer">
+        <div class="footer-links">
+            <span>About</span> • <span>Safety</span> • <span>Support</span> • <span>Privacy</span>
+        </div>
+        <div class="footer-tagline">Train with purpose. Punch with power.</div>
+    </div>
+</div>
 
         <!-- 2: LEADERBOARD -->
         <div id="screen-leaderboard" class="screen">

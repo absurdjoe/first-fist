@@ -246,3 +246,43 @@ input, button {
     box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
 }
 .tab-item.center-punch-action .punch-icon-wrapper svg { stroke: #fff; margin-bottom: 0; }
+
+/* =========================================
+   8. HOME SCREEN REVAMP STYLES
+========================================= */
+.home-header {
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);
+}
+.brand-group { display: flex; align-items: center; gap: 8px; }
+.brand-icon { width: 20px; height: 20px; }
+.brand-text { font-size: 16px; font-weight: 800; letter-spacing: 1px; color: var(--text); }
+.user-greeting { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.hero-section { text-align: center; margin-bottom: 32px; padding: 10px 0; }
+.hero-section h2 { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+.accent-text { color: var(--accent); }
+.hero-section p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; padding: 0 10px; }
+.hero-secondary { margin-top: 12px; }
+
+.card-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
+.stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; text-align: center; }
+.stat-val { font-size: 20px; margin-top: 6px; }
+.empty-state { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 16px; display: none; }
+
+.locked-card { border-color: rgba(255, 255, 255, 0.1); background: rgba(20, 23, 38, 0.4); text-align: center; }
+.locked-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+
+.info-card { padding: 24px; }
+.info-card p, .tech-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+.step-list, .bullet-list { margin-left: 20px; font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+.step-list li, .bullet-list li { margin-bottom: 10px; padding-left: 4px; }
+.safety-card { border-color: rgba(255, 42, 95, 0.2); background: rgba(255, 42, 95, 0.05); }
+
+.badge { background: var(--accent); color: #000; font-size: 9px; padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+.upcoming-card { opacity: 0.7; }
+
+.home-footer { text-align: center; padding: 20px 0 40px 0; }
+.footer-links { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; }
+.footer-links span { cursor: pointer; }
+.footer-tagline { font-size: 10px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }

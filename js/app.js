@@ -47,14 +47,51 @@ function loadLocalProfile() {
 }
 
 function updateHomeDashboard() {
+    // 1. Update the Greeting
     const usernameDisplay = document.getElementById('home-username');
     if (usernameDisplay) {
         const username = localStorage.getItem('ff_username') || 'Guest Fighter';
         usernameDisplay.textContent = window.isLoggedIn ? username.toUpperCase() : 'GUEST FIGHTER';
     }
     
-    document.getElementById('home-total').textContent = localStorage.getItem('ff_total_punches') || '0';
-    document.getElementById('home-pb').textContent = (localStorage.getItem('ff_personal_best') || '0') + '%';
+    // 2. Calculate and Update Stats
+    const totalPunches = parseInt(localStorage.getItem('ff_total_punches') || '0', 10);
+    const pbScore = localStorage.getItem('ff_personal_best') || '0';
+    
+    document.getElementById('home-total').textContent = totalPunches;
+    document.getElementById('home-pb').textContent = pbScore + '%';
+
+    // Calculate Average Force from History
+    const history = JSON.parse(localStorage.getItem('ff_history')) || [];
+    let avgForce = 0;
+    if (history.length > 0) {
+        const totalForce = history.reduce((sum, punch) => sum + (Number(punch.force) || 0), 0);
+        avgForce = Math.round(totalForce / history.length);
+    }
+    document.getElementById('home-avg').textContent = avgForce > 0 ? avgForce + ' N' : '-- N';
+
+    // Toggle Empty State Message
+    const statsGrid = document.getElementById('home-stats-grid');
+    const emptyState = document.getElementById('home-empty-state');
+    if (totalPunches === 0) {
+        if (statsGrid) statsGrid.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+    } else {
+        if (statsGrid) statsGrid.style.display = 'grid';
+        if (emptyState) emptyState.style.display = 'none';
+    }
+
+    // 3. Conditional UI Rendering based on Auth State
+    const heroLoginBtn = document.getElementById('hero-login-btn');
+    const competitiveCard = document.getElementById('home-competitive-card');
+    
+    if (window.isLoggedIn) {
+        if (heroLoginBtn) heroLoginBtn.style.display = 'none';
+        if (competitiveCard) competitiveCard.style.display = 'none';
+    } else {
+        if (heroLoginBtn) heroLoginBtn.style.display = 'block';
+        if (competitiveCard) competitiveCard.style.display = 'block';
+    }
 }
 
 // --- TAB ROUTING & GUEST LOCK ---
