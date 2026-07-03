@@ -1,0 +1,12 @@
+{
+  "name": "first-fist",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node"
+  },
+  "dependencies": {
+    "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
+    "mongodb": "^6.5.0"
+  }
+}
