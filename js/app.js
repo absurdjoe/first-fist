@@ -403,3 +403,38 @@ function evaluateAcademyGoal(metricsData, maxVelocity) {
 // Make globally available
 window.renderAcademy = renderAcademy;
 window.evaluateAcademyGoal = evaluateAcademyGoal;
+
+// =========================================
+// PWA INSTALLATION ENGINE
+// =========================================
+let deferredInstallPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome's default mini-infobar from appearing
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredInstallPrompt = e;
+    
+    // Unhide our custom install button in the Setup tab
+    const installCard = document.getElementById('install-card');
+    if (installCard) installCard.style.display = 'block';
+});
+
+window.triggerAppInstall = async function() {
+    if (!deferredInstallPrompt) return;
+    
+    // Show the native install prompt
+    deferredInstallPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        // Hide the button once installed
+        document.getElementById('install-card').style.display = 'none';
+    }
+    
+    // We can't use the prompt again, so discard it
+    deferredInstallPrompt = null;
+};
