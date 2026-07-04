@@ -5,8 +5,8 @@
 
 // Freeze configuration to prevent accidental runtime mutations
 const METRICS_CONFIG = Object.freeze({
-    // 3500 Newtons is roughly the impact force of an elite heavyweight professional boxer.
-    MAX_HUMAN_FORCE_NEWTONS: 3500.0, 
+    // Calibrated for kinetic flight force (shadowboxing), not heavy bag impact.
+    MAX_HUMAN_FORCE_NEWTONS: 800.0, 
     MAX_VELOCITY_MS: 12.0
 });
 
@@ -21,7 +21,7 @@ function calculatePunchPower(peakAccel, effectiveMass) {
     const validAccel = (typeof peakAccel === 'number' && !isNaN(peakAccel)) ? Math.max(0, peakAccel) : 0;
     const validMass = (typeof effectiveMass === 'number' && !isNaN(effectiveMass)) ? Math.max(1, effectiveMass) : 10;
 
-    // 1. Calculate raw kinetic force (F = ma)
+    // 1. Calculate raw kinetic force
     const calculatedForce = validMass * validAccel;
     
     // 2. Map force against the absolute human limit (0.0 to 1.0)
