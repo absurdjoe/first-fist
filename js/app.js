@@ -267,6 +267,8 @@ function savePunchToHistory(metrics, vectorName) {
     localStorage.setItem('ff_personal_best', personalBest.toString());
 
     if (typeof renderProfileHistory === 'function') renderProfileHistory();
+
+    if (window.syncProfileToCloud) window.syncProfileToCloud();
 }
 
 // --- EXPORT TO GLOBAL WINDOW OBJECT ---
@@ -320,6 +322,7 @@ function getAcademyState() {
 function saveAcademyState(state) {
     localStorage.setItem('ff_academy', JSON.stringify(state));
     renderAcademy();
+    if (window.syncProfileToCloud) window.syncProfileToCloud();
 }
 
 function renderAcademy() {

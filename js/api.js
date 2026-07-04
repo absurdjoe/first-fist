@@ -145,3 +145,85 @@ async function logTelemetry(metrics) {
 window.fetchOnlineLeaderboard = fetchOnlineLeaderboard;
 window.transmitScoreToLeaderboard = transmitScoreToLeaderboard;
 window.logTelemetry = logTelemetry;
+
+// =========================================
+// CLOUD PROFILE SYNC ENGINE
+// =========================================
+
+async function syncProfileToCloud() {
+    // Prevent syncing if they are a guest or missing an ID
+    const uid = localStorage.getItem('ff_uid');
+    if (!window.isLoggedIn || !uid) return;
+
+    // Strip the fat: Remove UI colors from history before sending to DB
+    const rawHistory = JSON.parse(localStorage.getItem('ff_history')) || [];
+    const leanHistory = rawHistory.map(punch => ({
+        date: punch.date, // Timestamp
+        score: punch.score,
+        force: punch.force,
+        vector: punch.vector
+        // Notice we explicitly DO NOT send punch.color
+    }));
+
+    const payload = {
+        uid: uid,
+        username: localStorage.getItem('ff_username') || 'Fighter',
+        weight: parseFloat(localStorage.getItem('ff_weight') || '70'),
+        academy: JSON.parse(localStorage.getItem('ff_academy')) || { level: 1, progress: 0 },
+        stats: {
+            total_punches: parseInt(localStorage.getItem('ff_total_punches') || '0'),
+            personal_best: parseInt(localStorage.getItem('ff_personal_best') || '0')
+        },
+        history: leanHistory // Max 30 items
+    };
+
+    try {
+        await fetch('/api/syncProfile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.error("Cloud sync failed. Data remains safe locally.");
+    }
+}
+
+async function fetchProfileFromCloud() {
+    const uid = localStorage.getItem('ff_uid');
+    if (!window.isLoggedIn || !uid) return;
+
+    try {
+        const response = await fetch(`/api/getProfile?uid=${uid}`);
+        if (!response.ok) return; // User might be new, no profile exists yet
+        
+        const data = await response.json();
+
+        // Overwrite LocalStorage with Cloud Truth
+        if (data.weight) localStorage.setItem('ff_weight', data.weight);
+        if (data.academy) localStorage.setItem('ff_academy', JSON.stringify(data.academy));
+        if (data.stats) {
+            localStorage.setItem('ff_total_punches', data.stats.total_punches);
+            localStorage.setItem('ff_personal_best', data.stats.personal_best);
+        }
+        
+        // Re-inject the colors into the history for the UI
+        if (data.history) {
+            const richHistory = data.history.map(punch => ({
+                ...punch,
+                color: window.getPowerColorGradient ? window.getPowerColorGradient(punch.score) : '#fff'
+            }));
+            localStorage.setItem('ff_history', JSON.stringify(richHistory));
+        }
+
+        // Force the UI to visually update
+        if (window.renderAcademy) window.renderAcademy();
+        if (window.updateHomeDashboard) window.updateHomeDashboard();
+        if (window.renderProfileHistory) window.renderProfileHistory();
+
+    } catch (e) {
+        console.error("Could not fetch cloud profile.");
+    }
+}
+
+window.syncProfileToCloud = syncProfileToCloud;
+window.fetchProfileFromCloud = fetchProfileFromCloud;

@@ -91,6 +91,7 @@ if (auth) {
                     // Profile found! Sync it to this phone
                     localStorage.setItem('ff_username', data.username);
                     window.isLoggedIn = true;
+                    if (window.fetchProfileFromCloud) await window.fetchProfileFromCloud();
                     syncLoggedInUI();
                 } else {
                     // Account exists, but no username chosen yet.
