@@ -303,3 +303,39 @@ input, button {
     align-items: center;
     gap: 10px;
 }
+
+/* =========================================
+   9. ACADEMY MAP STYLES
+========================================= */
+.academy-map { padding: 10px 10px 40px 10px; position: relative; }
+.academy-map::before { 
+    content: ''; position: absolute; left: 33px; top: 20px; bottom: 40px; 
+    width: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; z-index: 1;
+}
+
+.level-node { 
+    display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; 
+    position: relative; z-index: 2; opacity: 0.4; transition: 0.3s ease;
+}
+.level-node.completed { opacity: 0.8; }
+.level-node.active { opacity: 1; }
+
+.node-icon { 
+    width: 50px; height: 50px; border-radius: 50%; background: #141726; 
+    border: 3px solid rgba(255,255,255,0.1); display: flex; align-items: center; 
+    justify-content: center; font-weight: 900; font-size: 18px; flex-shrink: 0; color: #fff;
+}
+.level-node.completed .node-icon { background: var(--accent); border-color: var(--accent); color: #000; }
+.level-node.active .node-icon { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,255,0.4); }
+
+.node-content { 
+    background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); 
+    padding: 16px; border-radius: 12px; flex-grow: 1; 
+}
+.level-node.active .node-content { border-color: rgba(0,229,255,0.5); background: rgba(0,229,255,0.05); }
+
+.node-title { font-weight: 800; font-size: 15px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.node-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+.node-progress { margin-top: 12px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden; }
+.node-progress-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.4s ease; }

@@ -197,14 +197,30 @@
             </div>
         </div>
 
-        <!-- 5: COMBO MEASURE -->
-        <div id="screen-combo-measure" class="screen" style="justify-content: center; align-items: center; text-align: center;">
-            <div class="card" style="padding: 32px 20px;">
-                <div style="font-size: 32px; margin-bottom: 12px;">⚡</div>
-                <h3 style="font-size: 16px; font-weight: 800;">Tactical Combo Grid</h3>
-                <p style="color:var(--text-muted); font-size:13px; line-height: 1.4; margin-top: 6px;">Coming soon.</p>
-            </div>
-        </div>
+        <!-- 5: ACADEMY (Level Progression) -->
+<div id="screen-academy" class="screen">
+    <div class="home-header" style="justify-content: center; margin-bottom: 10px;">
+        <h2 style="font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">Training Academy</h2>
+    </div>
+    <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 24px; padding: 0 10px;">
+        Complete kinetic challenges to level up your control, speed, and consistency.
+    </p>
+
+    <!-- The Progression Map -->
+    <div class="academy-map" id="academy-map-container">
+        <!-- Nodes injected by JS -->
+    </div>
+</div>
+
+<!-- Level Up Celebration Modal -->
+<div id="levelup-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center;">
+    <div class="card" style="text-align: center; max-width: 90%; width: 320px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);">
+        <div style="font-size: 48px; margin-bottom: 10px;">⭐</div>
+        <h2 style="color: var(--accent); font-weight: 900; margin-bottom: 5px; text-transform: uppercase; font-size: 24px;">LEVEL UP!</h2>
+        <p id="levelup-msg" style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">You completed the challenge.</p>
+        <button class="btn primary" onclick="document.getElementById('levelup-modal').style.display='none'; window.switchTab('screen-academy');">Continue Training</button>
+    </div>
+</div>
 
         <!-- 6: PROFILE / SETUP -->
         <div id="screen-setup" class="screen">
@@ -251,10 +267,10 @@
                 <span>Test</span>
             </div>
 
-            <div id="tab-nav-combo" class="tab-item" onclick="window.switchTab('screen-combo-measure')">
-                <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon></svg>
-                <span>Combos</span>
-            </div>
+            <div id="tab-nav-academy" class="tab-item" onclick="window.switchTab('screen-academy'); window.renderAcademy();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+    <span>Academy</span>
+</div>
 
             <div id="tab-nav-setup" class="tab-item" onclick="window.switchTab('screen-setup')">
                 <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>

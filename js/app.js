@@ -226,6 +226,11 @@ function finalizeCapture() {
         }, 1200);
     }
     // Note: If logged in, populateMetricsUI() manages the submit button visibility dynamically.
+
+    // Evaluate this punch against the user's current Academy Goal
+    if (window.evaluateAcademyGoal && state.maxVelocity) {
+        window.evaluateAcademyGoal(metricsData, state.maxVelocity);
+    }
 }
 
 function remeasure() { 
@@ -292,3 +297,105 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// =========================================
+// ACADEMY & PROGRESSION ENGINE (V0)
+// =========================================
+
+const ACADEMY_LEVELS = [
+    { id: 1, title: "The Heavy Hand", desc: "Control: Score exactly between 30% and 50% power.", target: 3, type: 'control', min: 30, max: 50 },
+    { id: 2, title: "The Viper", desc: "Speed: Achieve a max velocity of 8.0 m/s or higher.", target: 1, type: 'speed', minVel: 8.0 },
+    { id: 3, title: "The Metronome", desc: "Consistency: Throw heavy punches (over 60%) to prove repeatability.", target: 3, type: 'consistency', minPower: 60 },
+    { id: 4, title: "Coming Soon", desc: "More challenges in development.", target: 1, type: 'locked' }
+];
+
+function getAcademyState() {
+    return JSON.parse(localStorage.getItem('ff_academy')) || { level: 1, progress: 0 };
+}
+
+function saveAcademyState(state) {
+    localStorage.setItem('ff_academy', JSON.stringify(state));
+    renderAcademy();
+}
+
+function renderAcademy() {
+    const container = document.getElementById('academy-map-container');
+    if (!container) return;
+    
+    let state = getAcademyState();
+    container.innerHTML = "";
+
+    ACADEMY_LEVELS.forEach(lvl => {
+        let statusClass = "locked";
+        let progressPct = 0;
+        let iconHtml = lvl.id;
+
+        if (lvl.id < state.level) {
+            statusClass = "completed";
+            progressPct = 100;
+            iconHtml = "✓";
+        } else if (lvl.id === state.level) {
+            statusClass = "active";
+            progressPct = (state.progress / lvl.target) * 100;
+        }
+
+        const node = document.createElement('div');
+        node.className = `level-node ${statusClass}`;
+        node.innerHTML = `
+            <div class="node-icon">${iconHtml}</div>
+            <div class="node-content">
+                <div class="node-title">${lvl.id}. ${lvl.title}</div>
+                <div class="node-desc">${lvl.desc}</div>
+                ${statusClass !== 'locked' && lvl.type !== 'locked' ? `
+                    <div class="node-progress">
+                        <div class="node-progress-fill" style="width: ${progressPct}%;"></div>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; font-weight: 700;">
+                        ${statusClass === 'completed' ? 'COMPLETED' : `${state.progress} / ${lvl.target}`}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        container.appendChild(node);
+    });
+}
+
+// Hook that evaluates the punch after it's processed
+function evaluateAcademyGoal(metricsData, maxVelocity) {
+    let state = getAcademyState();
+    if (state.level >= ACADEMY_LEVELS.length) return; // Reached "Coming Soon"
+
+    const currentLevel = ACADEMY_LEVELS[state.level - 1];
+    let success = false;
+
+    // Evaluate Criteria
+    if (currentLevel.type === 'control') {
+        if (metricsData.scorePct >= currentLevel.min && metricsData.scorePct <= currentLevel.max) success = true;
+    } else if (currentLevel.type === 'speed') {
+        if (maxVelocity >= currentLevel.minVel) success = true;
+    } else if (currentLevel.type === 'consistency') {
+        if (metricsData.scorePct >= currentLevel.minPower) success = true;
+    }
+
+    if (success) {
+        state.progress += 1;
+        if (state.progress >= currentLevel.target) {
+            // Level Up Condition Met!
+            state.level += 1;
+            state.progress = 0;
+            saveAcademyState(state);
+            
+            // Show celebration modal after a short delay so the user sees their score first
+            setTimeout(() => {
+                document.getElementById('levelup-msg').textContent = `You passed Level ${currentLevel.id}: ${currentLevel.title}`;
+                document.getElementById('levelup-modal').style.display = 'flex';
+            }, 1000);
+        } else {
+            saveAcademyState(state);
+        }
+    }
+}
+
+// Make globally available
+window.renderAcademy = renderAcademy;
+window.evaluateAcademyGoal = evaluateAcademyGoal;
