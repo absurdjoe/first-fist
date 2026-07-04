@@ -1,0 +1,21 @@
+{
+  "name": "First Fist Telemetry",
+  "short_name": "First Fist",
+  "description": "Measure your punch force and train smarter.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#06070a",
+  "theme_color": "#06070a",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

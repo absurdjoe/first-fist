@@ -6,6 +6,18 @@
     <meta name="theme-color" content="#06070a">
     <title>First Fist Telemetry</title>
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Link to your manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Register the Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
 </head>
 <body>
     <!-- ========================================= -->
