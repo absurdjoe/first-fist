@@ -240,11 +240,6 @@
 
         <!-- 6: PROFILE / SETUP -->
         <div id="screen-setup" class="screen">
-            <div class="card" id="install-card" style="display: none; background: linear-gradient(135deg, rgba(20,23,38,0.8), rgba(0,229,255,0.1)); border-color: var(--accent);">
-    <h3 style="font-size: 15px; margin-bottom: 8px; font-weight: 800;">Install Native App</h3>
-    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Add First Fist to your home screen for instant access and full-screen mode.</p>
-    <button class="btn primary" onclick="window.triggerAppInstall()">Install App</button>
-</div>
             <div class="card">
                 <h3 style="font-size: 15px; margin-bottom: 16px; font-weight: 800;">Fighter Calibration</h3>
                 <label class="label-caps" style="display: block; margin-bottom: 8px;">Mass Parameters (kg)</label>
@@ -259,6 +254,11 @@
             <div class="card">
                 <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 800;">Recent Strike History</h3>
                 <div id="history-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px;"></div>
+            </div>
+            <div class="card" id="install-card" style="display: none; background: linear-gradient(135deg, rgba(20,23,38,0.8), rgba(0,229,255,0.1)); border-color: var(--accent);">
+                <h3 style="font-size: 15px; margin-bottom: 8px; font-weight: 800;">Install Native App</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Add First Fist to your home screen for instant access and full-screen mode.</p>
+                <button class="btn primary" onclick="window.triggerAppInstall()">Install App</button>
             </div>
             <button class="btn ghost" style="margin-top: 20px; border-color: var(--red); color: var(--red);" onclick="window.logoutProfile()">
                 Sign Out
