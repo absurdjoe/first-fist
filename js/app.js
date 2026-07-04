@@ -200,24 +200,30 @@ function finalizeCapture() {
 
     const finalStability = (typeof calculateStability === 'function' && typeof stabilityBuffer !== 'undefined') ? calculateStability(stabilityBuffer) : 100;
     
-    const config = PUNCH_TYPES.find(p => p.id === state.punchType);
+    // 1. NEW LOGIC: Auto-Detect Punch Type from axes
+    const detectedPunch = (typeof window.detectPunchClass === 'function') 
+        ? window.detectPunchClass(state.peakX, state.peakY, state.peakZ) 
+        : { name: "STRAIGHT", massFraction: 0.050 };
+
+    // 2. Use detected mass fraction
     const weightInput = document.getElementById('input-weight');
     const userWeight = weightInput ? parseFloat(weightInput.value) : state.bodyWeight;
-    const effectiveMass = userWeight * config.fraction + 0.35;
+    const effectiveMass = userWeight * detectedPunch.massFraction + 0.35;
     
     const metricsData = (typeof calculatePunchPower === 'function') ? calculatePunchPower(state.peak, effectiveMass) : { scorePct: 0, force: 0 };
     metricsData.stability = finalStability; 
     
+    // 3. Update Results UI with the auto-detected name
+    const typeUI = document.getElementById('bd-type');
+    if (typeUI) typeUI.textContent = detectedPunch.name;
+
     if (typeof logTelemetry === 'function') window.logTelemetry(metricsData);
-    
-    if (typeof populateMetricsUI === 'function') populateMetricsUI(metricsData, effectiveMass, config.name);
+    if (typeof populateMetricsUI === 'function') populateMetricsUI(metricsData, effectiveMass, detectedPunch.name);
     state.lastMetrics = metricsData;
     
-    if (typeof savePunchToHistory === 'function') savePunchToHistory(metricsData, config.name);
-    
+    if (typeof savePunchToHistory === 'function') savePunchToHistory(metricsData, detectedPunch.name);
     if (typeof goTo === 'function') goTo('screen-result');
 
-    // Automatically prompt guests to sign in after viewing their score
     if (!window.isLoggedIn) {
         setTimeout(() => {
             if (typeof window.showLoginModal === 'function') {
@@ -225,9 +231,7 @@ function finalizeCapture() {
             }
         }, 1200);
     }
-    // Note: If logged in, populateMetricsUI() manages the submit button visibility dynamically.
 
-    // Evaluate this punch against the user's current Academy Goal
     if (window.evaluateAcademyGoal && state.maxVelocity) {
         window.evaluateAcademyGoal(metricsData, state.maxVelocity);
     }

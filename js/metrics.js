@@ -85,3 +85,26 @@ window.calculatePunchPower = calculatePunchPower;
 window.calculateStability = calculateStability;
 window.getPerformanceTier = getPerformanceTier;
 window.getPowerColorGradient = getPowerColorGradient;
+
+/**
+ * Auto-detects the punch type based on the dominant axis of acceleration.
+ * Assumes standard phone orientation (Z is forward, X is lateral, Y is vertical).
+ */
+function detectPunchClass(peakX, peakY, peakZ) {
+    // Get the absolute force on each axis
+    const absX = Math.abs(peakX || 0); // Side-to-side force
+    const absY = Math.abs(peakY || 0); // Up-and-down force
+    const absZ = Math.abs(peakZ || 0); // Forward-and-back force
+
+    // Compare axes to find the dominant movement vector
+    if (absX > absZ && absX > absY) {
+        return { name: "HOOK", massFraction: 0.075 }; // Hooks use more hip mass
+    } else if (absY > absZ && absY > absX) {
+        return { name: "UPPERCUT", massFraction: 0.065 }; // Uppercuts use leg/core drive
+    } else {
+        return { name: "STRAIGHT", massFraction: 0.050 }; // Jabs/Crosses use shoulder/arm
+    }
+}
+
+// Export it to the window
+window.detectPunchClass = detectPunchClass;
