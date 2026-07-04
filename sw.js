@@ -1,12 +1,8 @@
-// A simple service worker to satisfy PWA install requirements
-const CACHE_NAME = 'first-fist-v1';
+// Safer sw.js - Won't crash the PWA if a file is missing
+const CACHE_NAME = 'first-fist-v2';
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(['/index.html', '/css/style.css', '/js/app.js']);
-        })
-    );
+    self.skipWaiting(); // Force the waiting service worker to become the active service worker
 });
 
 self.addEventListener('fetch', (event) => {
